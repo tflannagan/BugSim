@@ -1,0 +1,3120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BugSim | Ty</title>
+    <link rel="icon" type="image/png" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sankofa+Display&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Quicksand", sans-serif !important;
+            touch-action: none;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .main-container {
+            width: 100%;
+            height: 100vh;
+            max-height: 96vh;
+            background: #2a2a2a;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            padding: 10px;
+            gap: 0px;
+            position: relative;
+        }
+
+        .game-container {
+            position: relative;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            touch-action: none;
+        }
+        
+        .overlay {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #statsOverlay {
+            bottom: 10px;
+            left: 10px;
+        }
+        
+        .side-panel {
+            position: relative;
+            background: #222;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            width: 250px;
+            transition: all 0.3s ease;
+            overflow: visible;
+        }
+
+        .side-panel.collapsed {
+            width: 0;
+            padding: 0;
+            margin: 0;
+            gap: 0px;
+        }
+
+        .side-panel.collapsed .control-group,
+        .side-panel.collapsed .entity-list,
+        .side-panel.collapsed .theme-selector {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .side-panel.collapsed .toggle-panel {
+            right: calc(100% + 40px);
+        }
+
+        .side-panel.collapsed > * {
+            visibility: hidden;
+        }
+        .toggle-panel {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px 0 0 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            visibility: visible !important;
+        }
+
+        .side-panel.collapsed > *:not(.toggle-panel) {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toggle-panel:hover {
+            background: #333;
+        }
+
+        .toggle-panel svg {
+            transition: transform 0.3s ease;
+        }
+
+        .side-panel.collapsed .toggle-panel svg {
+            transform: rotate(180deg);
+        }
+                
+        .toggle-panel.collapsed {
+            transform: translateY(-50%) rotate(180deg);
+            border-radius: 0 5px 5px 0;
+        }
+
+        .action-button {
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .action-button svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s ease;
+        }
+
+        .action-button:hover {
+            background: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .action-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .side-panel.collapsed .control-group {
+            opacity: 0;
+            pointer-events: none;
+        }
+                
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .action-button {
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 44px;
+            min-height: 44px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+                
+        button {
+            font-family: "Sankofa Display", sans-serif;
+            font-size: 1rem;
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #1a1a3a;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+                
+        button:hover {
+            background-color: #00ffff;
+            color: #1a1a3a;
+        }
+                
+        .entity-list {
+            background: #333;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .entity-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .entity-list::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+
+        .entity-list::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .entity-item {
+            background: #2a2a2a;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        #speedControl, #plantRateControl, #predationRateControl {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+            outline: none;
+            margin: 10px 0;
+        }
+
+        #speedControl::-webkit-slider-thumb, 
+        #plantRateControl::-webkit-slider-thumb, 
+        #predationRateControl::-webkit-slider-thumb
+         {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #speedControl::-webkit-slider-thumb:hover, 
+        #plantRateControl::-webkit-slider-thumb:hover, 
+        #predationRateControl::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        #tooltip {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            color: #fff;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 8px;
+            padding: 10px;
+            background: #333;
+            border-radius: 8px;
+            height: auto;
+            width: 100%;
+        }
+
+        .theme-option {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 4px;
+            background: #2a2a2a;
+        }
+
+        .theme-option:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-option.selected {
+            border-color: #fff;
+        }
+                
+        .theme-option.selected::after {
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 0 3px black;
+        }
+                
+        .theme-option .color-preview {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .checkbox-container input {
+            margin-right: 8px;
+        }
+
+        .checkbox-container label {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .species-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .species-button:hover {
+            background: #333;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .chart-container {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 5px;
+            width: 150px;
+            height: 80px;
+        }
+
+        .status-indicator {
+            height: 8px;
+            margin-top: 2px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
+        }
+
+        .modal {
+            background-color: #222;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background-color: #1a1a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #00ffff;
+            font-family: "Sankofa Display", sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #00ffff;
+        }
+
+        .modal-content {
+            padding: 20px;
+            color: #fff;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-footer button {
+            background-color: #1a1a3a;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: "Sankofa Display", sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-footer button:hover {
+            background-color: #00ffff;
+            color: #1a1a3a;
+        }
+
+        .family-section {
+            margin-bottom: 15px;
+        }
+        
+        .family-section h4 {
+            margin-bottom: 8px;
+            color: #00ffff;
+        }
+        
+        .family-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .family-member {
+            background: rgba(40, 40, 40, 0.9);
+            border-radius: 6px;
+            padding: 8px;
+            border-left: 3px solid;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .member-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .member-details {
+            font-size: 12px;
+        }
+        
+        .more-family {
+            font-size: 12px;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            background: rgba(40, 40, 40, 0.9);
+            border-radius: 4px;
+            padding: 5px 10px;
+        }
+        
+        .stat-label {
+            font-weight: bold;
+            margin-right: 5px;
+            color: #aaa;
+        }
+
+        @keyframes modalFadeIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+                
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .side-panel {
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                width: auto;
+                max-width: 250px;
+                height: auto;
+                max-height: 80vh;
+                z-index: 100;
+            }
+
+            .side-panel.collapsed {
+                transform: translateX(calc(100% + 20px));
+            }
+
+            .toggle-panel {
+                left: -35px;
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .action-button {
+                flex: 1;
+                min-width: 40px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="statsOverlay" class="overlay">
+                FPS: <span id="fpsCounter">0</span> | 
+                Time: <span id="timeCounter">00:00:00</span> |
+                Organisms: <span id="organismCounter">0</span> | 
+                Plants: <span id="plantCounter">0</span>
+            </div>
+        </div>
+        <div class="side-panel">
+            <button class="toggle-panel">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    <path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z"/>
+                </svg>
+            </button>
+            <div class="control-group">
+                <div class="action-buttons">
+                    <button class="action-button" id="startStopBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                            <path d="M320-200v-560l440 280-440 280Z"/>
+                        </svg>
+                    </button>
+                    <button class="action-button" id="resetBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="slider-label">
+                    <span>Simulation Speed</span>
+                    <span id="speedValue">50</span>
+                </div>
+                <input type="range" id="speedControl" min="1" max="100" value="50">
+                
+                <div class="slider-label">
+                    <span>Plant Growth Rate</span>
+                    <span id="plantRateValue">50</span>
+                </div>
+                <input type="range" id="plantRateControl" min="1" max="100" value="50">
+                
+                <div class="slider-label">
+                    <span>Predation Rate</span>
+                    <span id="predationRateValue">50</span>
+                </div>
+                <input type="range" id="predationRateControl" min="1" max="100" value="50">
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="boundaryCheckbox" checked>
+                    <label for="boundaryCheckbox">Boundary Walls</label>
+                </div>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="trailsCheckbox">
+                    <label for="trailsCheckbox">Show Trails</label>
+                </div>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="chartsCheckbox" checked>
+                    <label for="chartsCheckbox">Show Population Charts</label>
+                </div>
+                
+                <div class="species-controls" id="speciesButtons">
+                    <button class="species-button" id="addPreyBtn">
+                        <span><span class="dot" style="background-color:#7FD9B4;"></span>Add Prey</span>
+                    </button>
+                    <button class="species-button" id="addPredatorBtn">
+                        <span><span class="dot" style="background-color:#FF6B6B;"></span>Add Predator</span>
+                    </button>
+                    <button class="species-button" id="addPlantBtn">
+                        <span><span class="dot" style="background-color:#39B54A;"></span>Add Plant</span>
+                    </button>
+                </div>
+                
+                <div class="ecosystem-status">
+                    <div class="slider-label">
+                        <span>Ecosystem Balance</span>
+                    </div>
+                    <div class="status-indicator" id="balanceIndicator"></div>
+                </div>
+            </div>
+            <div class="control-group">
+                <div id="speciesList" class="entity-list"></div>
+            </div>
+            <div class="control-group">
+                <div id="themeSelector" class="theme-selector"></div>
+            </div>
+        </div>
+
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal" id="alertModal">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Alert</h3>
+                    <button id="modalClose" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <p id="modalMessage">This is a modal message.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="modalOkButton" class="action-button">OK</button>
+                </div>
+            </div>
+            
+            <div class="modal" id="familyTreeModal">
+                <div class="modal-header">
+                    <h3 id="familyTreeTitle">Family Tree</h3>
+                    <button id="familyTreeClose" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="familyTreeContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="familyTreeOkButton" class="action-button">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="tooltip" style="display: none; position: absolute;"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const startStopBtn = document.getElementById('startStopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedControl = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+        const plantRateControl = document.getElementById('plantRateControl');
+        const plantRateValue = document.getElementById('plantRateValue');
+        const predationRateControl = document.getElementById('predationRateControl');
+        const predationRateValue = document.getElementById('predationRateValue');
+        const boundaryCheckbox = document.getElementById('boundaryCheckbox');
+        const trailsCheckbox = document.getElementById('trailsCheckbox');
+        const chartsCheckbox = document.getElementById('chartsCheckbox');
+        const speciesList = document.getElementById('speciesList');
+        const fpsCounter = document.getElementById('fpsCounter');
+        const organismCounter = document.getElementById('organismCounter');
+        const plantCounter = document.getElementById('plantCounter');
+        const balanceIndicator = document.getElementById('balanceIndicator');
+        const addPreyBtn = document.getElementById('addPreyBtn');
+        const addPredatorBtn = document.getElementById('addPredatorBtn');
+        const addPlantBtn = document.getElementById('addPlantBtn');
+        
+        let isRunning = false;
+        let animationId;
+        let lastUpdateTime = 0;
+        let updateInterval = 20;
+        let fpsUpdateInterval = 500;
+        let lastFpsUpdateTime = 0;
+        let frameCount = 0;
+        let currentFps = 0;
+        let lowBalanceAlertShown = false;
+        let extinctionAlertShown = {
+            predator: false,
+            prey: false
+        };
+        
+        const offscreenCanvas = document.createElement('canvas');
+        const offscreenCtx = offscreenCanvas.getContext('2d', { alpha: false });
+        
+        let trailCanvas;
+        let trailCtx;
+        
+        let width, height;
+        let organisms = [];
+        let predationRate = 0.5;
+        let boundaryEnabled = true;
+        let showTrails = false;
+        let showCharts = true;
+        let timeStep = 1;
+        let plantGrowthRate = 0.5;
+        let simulationStartTime = 0;
+        let simulationElapsedTime = 0;
+
+        let ecosystemBalance = 0.5;
+        let totalPopulations = { 'predator': 0, 'prey': 0, 'plant': 0 };
+        let populationHistory = {
+            'predator': Array(50).fill(0),
+            'prey': Array(50).fill(0),
+            'plant': Array(50).fill(0)
+        };
+        
+        const colorThemes = [
+            {
+                name: 'Natural',
+                primary: '#4B7BE5',
+                secondary: '#345E8F',
+                tertiary: '#89CFF0',
+                background: '#0A1621',
+                species: {
+                    'predator': '#FF6B6B',
+                    'prey': '#7FD9B4',
+                    'plant': '#39B54A',
+                    'food': '#FFCE54'
+                }
+            },
+            {
+                name: 'Desert',
+                primary: '#FF9F1C',
+                secondary: '#E76F51',
+                tertiary: '#F4A261',
+                background: '#2A2523',
+                species: {
+                    'predator': '#E76F51',
+                    'prey': '#F4A261',
+                    'plant': '#8AB17D',
+                    'food': '#EFE9AE'
+                }
+            },
+            {
+                name: 'Ocean',
+                primary: '#00CCF5',
+                secondary: '#0083FF',
+                tertiary: '#7C00FF',
+                background: '#001D2E',
+                species: {
+                    'predator': '#005F99',
+                    'prey': '#59C9A5',
+                    'plant': '#5DFDCB',
+                    'food': '#D0F4EA'
+                }
+            },
+            {
+                name: 'Neon',
+                primary: '#FF2A6D',
+                secondary: '#D1F7FF',
+                tertiary: '#05D9E8',
+                background: '#010B14',
+                species: {
+                    'predator': '#FF2A6D',
+                    'prey': '#05D9E8',
+                    'plant': '#39FF14',
+                    'food': '#FDFF00'
+                }
+            },
+            {
+                name: 'Forest',
+                primary: '#52734D',
+                secondary: '#91C788',
+                tertiary: '#DDFFBC',
+                background: '#1A2E1B',
+                species: {
+                    'predator': '#924441',
+                    'prey': '#C8A279',
+                    'plant': '#52734D',
+                    'food': '#FEFFDE'
+                }
+            },
+            {
+                name: 'Volcano',
+                primary: '#FC5404',
+                secondary: '#BD2000',
+                tertiary: '#FFB17A',
+                background: '#1F0406',
+                species: {
+                    'predator': '#FC4F4F',
+                    'prey': '#FFA900',
+                    'plant': '#60B158',
+                    'food': '#FFE59D'
+                }
+            },
+            {
+                name: 'Arctic',
+                primary: '#B8F3FF',
+                secondary: '#76B4BD',
+                tertiary: '#A9D2D5',
+                background: '#0C141A',
+                species: {
+                    'predator': '#76B4BD',
+                    'prey': '#C4DFE6',
+                    'plant': '#66CCB5',
+                    'food': '#DEFFFC'
+                }
+            },
+            {
+                name: 'Sunset',
+                primary: '#FF9B71',
+                secondary: '#E84855',
+                tertiary: '#FFD166',
+                background: '#241623',
+                species: {
+                    'predator': '#E84855',
+                    'prey': '#FECEA8',
+                    'plant': '#3A7D44',
+                    'food': '#FFD166'
+                }
+            }
+        ];
+        
+        let currentTheme = colorThemes[0];
+            
+        const predatorNames = [
+            "Fang", "Shadow", "Hunter", "Stalker", "Prowler", "Razor", "Slate", "Blaze", "Dagger", "Talon",
+            "Savage", "Grim", "Striker", "Raven", "Wolf", "Phoenix", "Viper", "Cobra", "Hawk", "Eagle",
+            "Falcon", "Panther", "Jaguar", "Tiger", "Lion", "Raptor", "Storm", "Thunder", "Bandit", "Flint"
+        ];
+
+        const preyNames = [
+            "Hopper", "Nibble", "Whisker", "Swift", "Bounce", "Fluffy", "Dash", "Clover", "Pebble", "Speck",
+            "Cotton", "Dandy", "Dew", "Dusty", "Echo", "Flicker", "Fluff", "Frost", "Glow", "Grove", 
+            "Maple", "Mist", "Moss", "Petal", "Reed", "Rustle", "Silk", "Skip", "Spark", "Sunny"
+        ];
+
+        const plantNames = [
+            "Sprout", "Willow", "Fern", "Ivy", "Sage", "Basil", "Juniper", "Maple", "Birch", "Cedar",
+            "Daisy", "Lily", "Rose", "Tulip", "Orchid", "Lavender", "Clover", "Thistle", "Bramble", "Holly",
+            "Nettle", "Thorn", "Bloom", "Blossom", "Petal", "Leaf", "Root", "Seed", "Vine", "Herb"
+        ];
+
+        class Organism {
+            constructor(x, y, type, parent = null) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.type = type;
+        this.size = type === 'predator' ? 4 : type === 'prey' ? 4 : 3;
+        this.energy = type === 'plant' ? 60 + Math.random() * 40 : type === 'predator' ? 200 : 140;
+        this.maxEnergy = type === 'plant' ? 200 + Math.random() * 50 : type === 'predator' ? 200 : 170;
+        this.ageInTicks = type === 'plant' ? Math.floor(Math.random() * 500) : 0;
+        this.reproductionCooldown = 0;
+        this.lastMeal = 0;
+        this.dead = false;
+        this.id = generateName(type);
+        this.target = null;
+        this.fleeing = false;
+        this.color = this.getBaseColor();
+        this.generation = 1;
+        this.deathCause = '';
+        this.hungerRate = type === 'predator' ? 0.25 : type === 'prey' ? 0.11 : 0.1 + (Math.random() * 0.05 - 0.025);
+        
+        if (type === 'plant') {
+            const variability = 0.25;
+            const baseMaxAge = 2000;
+            this.maxAge = baseMaxAge * (1 - variability/2 + Math.random() * variability);
+            this.decayThreshold = this.maxAge * (0.7 + Math.random() * 0.2);
+            this.decayRate = 0.05 + Math.random() * 0.1;
+        } else if (type === 'predator') {
+            this.maxAge = 6000;
+        } else {
+            this.maxAge = 2500;
+        }
+        
+        this.perceptionRadius = type === 'predator' ? 145 : type === 'prey' ? 150 : 40;
+        this.catchRadius = type === 'predator' ? this.size * 1.5 : this.size * 1.5;
+        this.maxSpeed = type === 'predator' ? 2.5 : type === 'prey' ? 2.6 : 0.5;
+        this.acceleration = type === 'predator' ? 0.25 : type === 'prey' ? 0.2 : 0.05;
+        this.birthEnergyCost = type === 'predator' ? 30 : 25;
+        this.preyCatchBonus = 60;
+        this.plantCatchBonus = 35;
+        this.metabolism = type === 'predator' ? 0.2 : type === 'prey' ? 0.1 : 0.1;
+        this.hidingMetabolismFactor = type === 'predator' ? 0.6 : 1.0;
+        this.trailPositions = [];
+        this.growthRate = type === 'plant' ? 1.5 * (0.8 + Math.random() * 0.4) : 0;
+        this.lastReproductionTime = 0;
+        
+        this.hiding = false;
+        this.hidingPlant = null;
+        this.hidingTime = 0;
+        this.hidingCooldown = 0;
+        this.ambushCooldown = 0;
+        this.ambushSpeedBoost = 1.8;
+        this.ambushBoostDuration = 0;
+        this.canSeeHidingPrey = type === 'predator';
+        
+        this.parent = parent;
+        this.children = [];
+        this.eatingCooldown = 0;
+        
+        if (parent) {
+            this.generation = parent.generation + 1;
+            parent.children.push(this);
+            
+            if (type === 'plant') {
+                this.maxAge = parent.maxAge * (0.9 + Math.random() * 0.2);
+                this.growthRate = parent.growthRate * (0.9 + Math.random() * 0.2);
+            }
+        }
+    }
+        
+            getBaseColor() {
+                if (this.type !== 'plant') {
+                    return currentTheme.species[this.type];
+                }
+                
+                const baseColor = currentTheme.species[this.type];
+                const ageRatio = this.ageInTicks / this.maxAge;
+                
+                if (ageRatio > 0.8) {
+                    const plantColor = chroma(baseColor);
+                    const brownColor = chroma('#8B4513');
+                    const t = Math.min(1, (ageRatio - 0.8) * 5);
+                    return chroma.mix(plantColor, brownColor, t).hex();
+                }
+                
+                return baseColor;
+            }
+
+            tryToHideInPlant() {
+                if (this.hidingCooldown > 0) {
+                    this.hidingCooldown--;
+                    return false;
+                }       
+
+                if (this.hiding) return true;        
+
+                let closestPlant = null;
+                let closestDistance = this.perceptionRadius * 0.7;
+                
+                for (let i = 0; i < organisms.length; i++) {
+                    if (organisms[i].type === 'plant' && !organisms[i].dead) {
+                        const distance = this.distanceTo(organisms[i]);
+                        if (distance < closestDistance) {
+                            closestPlant = organisms[i];
+                            closestDistance = distance;
+                        }
+                    }
+                }
+                
+                if (closestPlant) {
+                    this.moveTowards(closestPlant, false);
+                    
+                    if (closestDistance < closestPlant.size * 2) {
+                        let hidingSuccess = true;
+                        
+                        if (this.type === 'prey') {
+                            const nearbyPredators = organisms.filter(o => 
+                                o.type === 'predator' && 
+                                o.hiding && 
+                                o.hidingPlant === closestPlant
+                            );
+                            
+                            if (nearbyPredators.length > 0) {
+                                const detectionChance = 0.85;
+                                if (Math.random() < detectionChance) {
+                                    hidingSuccess = false;
+                                    this.fleeing = true;
+                                    this.hidingCooldown = 80;
+                                    
+                                    const escapeAngle = Math.random() * Math.PI * 2;
+                                    this.vx = Math.cos(escapeAngle) * this.maxSpeed * 1.8;
+                                    this.vy = Math.sin(escapeAngle) * this.maxSpeed * 1.8;
+                                }
+                            }
+                        }
+                        
+                        if (hidingSuccess) {
+                            this.hiding = true;
+                            this.hidingPlant = closestPlant;
+                            this.hidingTime = 0;
+                            
+                            const offsetDistance = closestPlant.size * 0.5;
+                            const offsetAngle = Math.random() * Math.PI * 2;
+                            this.x = closestPlant.x + Math.cos(offsetAngle) * offsetDistance;
+                            this.y = closestPlant.y + Math.sin(offsetAngle) * offsetDistance;
+                            
+                            this.vx = 0;
+                            this.vy = 0;
+                            
+                            if (this.type === 'prey') {
+                                this.hidingEffectiveness = 0.7;
+                            }
+                            
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            }
+
+            update() {
+                this.ageInTicks++;
+
+                const metabolismMultiplier = (this.type === 'predator' && this.hiding) ? this.hidingMetabolismFactor : 1.0;
+                this.energy -= this.metabolism * this.hungerRate * metabolismMultiplier;
+                
+                this.color = this.getBaseColor();
+                
+                if (this.type === 'plant') {
+                    const ageRatio = this.ageInTicks / this.maxAge;
+                    
+                    if (ageRatio < 0.3) {
+                        this.energy += this.growthRate * plantGrowthRate * (1.2 - ageRatio);
+                    } else if (ageRatio < 0.7) {
+                        this.energy += this.growthRate * plantGrowthRate * (0.9 + Math.sin(this.ageInTicks * 0.01) * 0.1);
+                    } else {
+                        if (this.ageInTicks > this.decayThreshold) {
+                            this.energy -= this.decayRate * (ageRatio - 0.7) * 2;
+                        } else {
+                            this.energy += this.growthRate * plantGrowthRate * (0.7 - (ageRatio - 0.7));
+                        }
+                    }
+                    
+                    if (Math.random() < 0.001 * ageRatio * ageRatio) {
+                        this.energy -= Math.random() * 5;
+                    }
+                    
+                    if (this.energy > this.maxEnergy) {
+                        this.energy = this.maxEnergy;
+                    }
+                }
+                
+                if (this.reproductionCooldown > 0) {
+                    this.reproductionCooldown--;
+                }
+                
+                if (this.eatingCooldown > 0) {
+                    this.eatingCooldown--;
+                }
+                
+                if (this.ambushCooldown > 0) {
+                    this.ambushCooldown--;
+                }
+                
+                if (this.hidingCooldown > 0) {
+                    this.hidingCooldown--;
+                }
+                
+                if (this.energy <= 0) {
+                    this.dead = true;
+                    this.deathCause = 'starvation';
+                    return false;
+                }
+                
+                if (this.ageInTicks > this.maxAge) {
+                    if (this.type === 'plant' && Math.random() < 0.8) {
+                        this.maxAge += Math.floor(Math.random() * 100);
+                    } else {
+                        this.dead = true;
+                        this.deathCause = 'old age';
+                        return false;
+                    }
+                }
+                
+                if (this.hiding && (this.hidingPlant.dead || !organisms.includes(this.hidingPlant))) {
+                    this.hiding = false;
+                    this.hidingPlant = null;
+                }
+                
+                let predationSuccess = false;
+                
+                if (this.type === 'predator') {
+                    if (this.energy < this.maxEnergy * 0.4 || Math.random() < 0.3 || this.hiding) {
+                        predationSuccess = this.huntForPrey();
+                        
+                        if (predationSuccess && this.hiding) {
+                            this.hiding = false;
+                            this.hidingPlant = null;
+                            this.ambushCooldown = 100;
+                        }
+                    } 
+                    else if (!this.hiding && Math.random() < 0.1) {
+                        const foundHidingSpot = this.tryToHideInPlant();
+                        if (!foundHidingSpot) {
+                            if (this.energy < this.maxEnergy * 0.3) {
+                                this.searchForFood();
+                            } else {
+                                this.wander();
+                            }
+                        }
+                    }
+                    else if (this.hiding) {
+                        this.hidingTime++;
+                        
+                        if (this.hidingTime > 450) {
+                            this.hiding = false;
+                            this.hidingPlant = null;
+                            this.ambushCooldown = 50;
+                        }
+                    }
+                    else {
+                        if (this.energy < this.maxEnergy * 0.3) {
+                            this.searchForFood();
+                        } else {
+                            this.wander();
+                        }
+                    }
+                } else if (this.type === 'prey') {
+                    if (!this.hiding) {
+                        const foundPredator = this.lookForPredators();
+                        
+                        if (this.fleeing && foundPredator && Math.random() < 0.5) {
+                            const hideSuccess = this.tryToHideInPlant();
+                            if (!hideSuccess) {
+                                this.fleeFrom(foundPredator);
+                            }
+                        } else if (!this.fleeing) {
+                            if (this.eatingCooldown <= 0) {
+                                this.searchForFood();
+                            } else {
+                                this.wander();
+                            }
+                        }
+                    } else {
+                        this.hidingTime++;
+                        
+                        if (this.hidingTime > 300) {
+                            this.hiding = false;
+                            this.hidingPlant = null;
+                            this.hidingCooldown = 30;
+                        }
+                        
+                        const predatorsInSamePlant = organisms.filter(o => 
+                            o.type === 'predator' && 
+                            o.hiding && 
+                            o.hidingPlant === this.hidingPlant
+                        );
+                        
+                        if (predatorsInSamePlant.length > 0) {
+                            const detectionChance = 0.9;
+                            if (Math.random() < detectionChance) {
+                                this.hiding = false;
+                                this.hidingPlant = null;
+                                this.fleeing = true;
+                                this.hidingCooldown = 50;
+                                const escapeAngle = Math.random() * Math.PI * 2;
+                                this.vx = Math.cos(escapeAngle) * this.maxSpeed * 1.8;
+                                this.vy = Math.sin(escapeAngle) * this.maxSpeed * 1.8;
+                            } else {
+                                const huntSuccess = Math.random() < (predationRate * 1.5);
+                                if (huntSuccess) {
+                                    predatorsInSamePlant[0].catchPrey(this);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!this.hiding) {
+                    this.move();
+                }
+                
+                this.checkBoundaries();
+                
+                const minReproductionEnergy = this.type === 'predator' ? this.maxEnergy * 0.7 : this.maxEnergy * 0.60;
+                const minReproductionAge = this.type === 'predator' ? 650 : 500;
+                const minTimeBetweenReproductions = this.type === 'predator' ? 500 : 300;
+                
+                if (this.energy > minReproductionEnergy && 
+                    this.reproductionCooldown === 0 && 
+                    this.ageInTicks > minReproductionAge &&
+                    (this.ageInTicks - this.lastReproductionTime) > minTimeBetweenReproductions) {
+                    this.reproduce();
+                }
+                
+                return true;
+            }
+            
+            move() {
+                if (this.type !== 'plant') {
+                    if (showTrails) {
+                        this.trailPositions.push({x: this.x, y: this.y});
+                        if (this.trailPositions.length > 10) {
+                            this.trailPositions.shift();
+                        }
+                    } else {
+                        this.trailPositions = [];
+                    }
+                    
+                    this.x += this.vx * timeStep;
+                    this.y += this.vy * timeStep;
+                    
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+                }
+            }
+            
+            checkBoundaries() {
+                if (boundaryEnabled) {
+                    if (this.x < this.size) {
+                        this.x = this.size;
+                        this.vx *= -0.8;
+                    } else if (this.x > width - this.size) {
+                        this.x = width - this.size;
+                        this.vx *= -0.8;
+                    }
+                    
+                    if (this.y < this.size) {
+                        this.y = this.size;
+                        this.vy *= -0.8;
+                    } else if (this.y > height - this.size) {
+                        this.y = height - this.size;
+                        this.vy *= -0.8;
+                    }
+                } else {
+                    if (this.x < 0) this.x = width;
+                    if (this.x > width) this.x = 0;
+                    if (this.y < 0) this.y = height;
+                    if (this.y > height) this.y = 0;
+                }
+            }
+            
+            huntForPrey() {
+                let closestPrey = null;
+                let closestDistance = this.hiding ? this.perceptionRadius * 0.5 : this.perceptionRadius;
+                
+                for (let i = 0; i < organisms.length; i++) {
+                    if (organisms[i].type === 'prey' && !organisms[i].dead) {
+                        if (organisms[i].hiding && organisms[i].hidingPlant !== this.hidingPlant) {
+                            continue;
+                        }
+                        
+                        const distance = this.distanceTo(organisms[i]);
+                        if (distance < closestDistance) {
+                            closestPrey = organisms[i];
+                            closestDistance = distance;
+                        }
+                    }
+                }
+                
+                if (closestPrey) {
+                    if (this.hiding) {
+                        if (closestDistance < this.catchRadius * 2 || 
+                        (closestPrey.hiding && closestPrey.hidingPlant === this.hidingPlant)) {
+                            const ambushBonus = 1.5;
+                            const huntSuccess = Math.random() < (predationRate * ambushBonus);
+                            
+                            if (huntSuccess) {
+                                this.hiding = false;
+                                this.hidingPlant = null;
+                                
+                                this.ambushSpeedBoost = 2.5;
+                                this.ambushBoostDuration = 25;
+                                
+                                const dx = closestPrey.x - this.x;
+                                const dy = closestPrey.y - this.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance > 0) {
+                                    this.vx = (dx / distance) * this.maxSpeed * this.ambushSpeedBoost;
+                                    this.vy = (dy / distance) * this.maxSpeed * this.ambushSpeedBoost;
+                                }
+                                
+                                this.catchPrey(closestPrey);
+                                return true;
+                            } else {
+                                this.hiding = false;
+                                this.hidingPlant = null;
+                                this.ambushCooldown = 150;
+                                this.ambushSpeedBoost = 1.8;
+                                this.ambushBoostDuration = 15;
+                                
+                                const dx = closestPrey.x - this.x;
+                                const dy = closestPrey.y - this.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance > 0) {
+                                    this.vx = (dx / distance) * this.maxSpeed * this.ambushSpeedBoost;
+                                    this.vy = (dy / distance) * this.maxSpeed * this.ambushSpeedBoost;
+                                }
+                            }
+                        }
+                    } else {
+                        if (this.ambushBoostDuration > 0) {
+                            this.ambushBoostDuration--;
+                            this.moveTowards(closestPrey, true, this.ambushSpeedBoost);
+                            
+                            if (this.ambushBoostDuration === 0) {
+                                this.ambushSpeedBoost = 1.0;
+                            }
+                        } else {
+                            this.moveTowards(closestPrey, true);
+                        }
+                        
+                        if (closestDistance < this.catchRadius) {
+                            const huntSuccess = Math.random() < (predationRate * 1.4);
+                            if (huntSuccess) {
+                                this.catchPrey(closestPrey);
+                                return true;
+                            }
+                        }
+                    }
+                } else if (!this.hiding) {
+                    this.wander();
+                }
+                
+                return false;
+            }
+
+            lookForPredators() {
+                let closestPredator = null;
+                let closestDistance = this.perceptionRadius * 1.1;
+                
+                for (let i = 0; i < organisms.length; i++) {
+                    if (organisms[i].type === 'predator' && !organisms[i].dead) {
+                        if (organisms[i].hiding) {
+                            continue;
+                        }
+                        
+                        const distance = this.distanceTo(organisms[i]);
+                        if (distance < closestDistance) {
+                            closestPredator = organisms[i];
+                            closestDistance = distance;
+                        }
+                    }
+                }
+                
+                if (closestPredator) {
+                    this.fleeing = true;
+                    this.fleeFrom(closestPredator);
+                    return closestPredator;
+                } else {
+                    if (Math.random() < 0.05) {
+                        this.fleeing = false;
+                    }
+                    return null;
+                }
+            }
+
+            searchForFood() {
+                if (this.type === 'prey' && this.eatingCooldown > 0) {
+                    this.wander();
+                    return;
+                }
+                
+                let closestPlant = null;
+                let closestDistance = this.perceptionRadius;
+                
+                for (let i = 0; i < organisms.length; i++) {
+                    if (organisms[i].type === 'plant' && !organisms[i].dead) {
+                        const distance = this.distanceTo(organisms[i]);
+                        if (distance < closestDistance) {
+                            closestPlant = organisms[i];
+                            closestDistance = distance;
+                        }
+                    }
+                }
+                
+                if (closestPlant) {
+                    this.moveTowards(closestPlant, false);
+                    
+                    if (closestDistance < this.catchRadius) {
+                        this.eatPlant(closestPlant);
+                    }
+                } else {
+                    this.wander();
+                }
+            }
+            
+            eatPlant(plant) {
+                const energyGain = Math.min(20, plant.energy);
+                plant.energy -= energyGain;
+                
+                if (plant.energy <= 0) {
+                    plant.dead = true;
+                    plant.deathCause = 'eaten';
+                    
+                    const plantIndex = organisms.indexOf(plant);
+                    if (plantIndex !== -1) {
+                        organisms.splice(plantIndex, 1);
+                    }
+                }
+                
+                this.energy = Math.min(this.maxEnergy, this.energy + this.plantCatchBonus);
+                this.lastMeal = this.ageInTicks;
+                
+                
+                if (this.type === 'prey' && this.energy > this.maxEnergy * 0.85) {
+                    this.eatingCooldown = 150;
+                }
+            }
+            
+            moveTowards(target, isPredator, boostMultiplier = 1.0) {
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    const speedMultiplier = isPredator ? 1.2 * boostMultiplier : 1.0;
+                    const acceleration = this.acceleration * speedMultiplier;
+                    
+                    this.vx += (dx / distance) * acceleration;
+                    this.vy += (dy / distance) * acceleration;
+                    
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.maxSpeed * speedMultiplier) {
+                        this.vx = (this.vx / speed) * this.maxSpeed * speedMultiplier;
+                        this.vy = (this.vy / speed) * this.maxSpeed * speedMultiplier;
+                    }
+                }
+            }
+            
+            fleeFrom(predator) {
+                const dx = this.x - predator.x;
+                const dy = this.y - predator.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    const speedMultiplier = 1.5;
+                    const acceleration = this.acceleration * speedMultiplier;
+                    
+                    this.vx += (dx / distance) * acceleration;
+                    this.vy += (dy / distance) * acceleration;
+                    
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (speed > this.maxSpeed * speedMultiplier) {
+                        this.vx = (this.vx / speed) * this.maxSpeed * speedMultiplier;
+                        this.vy = (this.vy / speed) * this.maxSpeed * speedMultiplier;
+                    }
+                }
+            }
+
+            wander() {
+                    if (Math.random() < 0.25) {
+                        this.vx += (Math.random() - 0.5) * this.acceleration;
+                        this.vy += (Math.random() - 0.5) * this.acceleration;
+                        
+                        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                        if (speed > this.maxSpeed * 0.09) {
+                            this.vx = (this.vx / speed) * this.maxSpeed * 0.5;
+                            this.vy = (this.vy / speed) * this.maxSpeed * 0.5;
+                        }
+                }
+            }           
+
+            catchPrey(prey) {
+                const preyIndex = organisms.indexOf(prey);
+                if (preyIndex !== -1) {
+                    organisms[preyIndex].dead = true;
+                    organisms[preyIndex].deathCause = 'predation';
+                    
+                    this.energy = Math.min(this.maxEnergy, this.energy + this.preyCatchBonus);
+                    this.lastMeal = this.ageInTicks;
+                    
+                    for (let i = organisms.length - 1; i >= 0; i--) {
+                        if (organisms[i].dead) {
+                            organisms.splice(i, 1);
+                        }
+                    }
+                    
+                    return true;
+                }
+                return false;
+            }
+            
+            reproduce() {
+                if (this.energy < this.birthEnergyCost + 20) return;
+    
+                if (this.type === 'plant') {
+                    const plantCount = organisms.filter(o => o.type === 'plant').length;
+                    if (plantCount >= 1000) return;
+                } else if (this.type === 'predator') {
+                    const predatorCount = organisms.filter(o => o.type === 'predator').length;
+                    const preyCount = organisms.filter(o => o.type === 'prey').length;
+                    
+                    if (predatorCount > 0 && preyCount > 0 && (predatorCount / preyCount) > 0.23) return;
+                } else if (this.type === 'prey') {
+                    const preyCount = organisms.filter(o => o.type === 'prey').length;
+                    if (preyCount >= 500) return;
+                }
+                
+                this.energy -= this.birthEnergyCost;
+                this.reproductionCooldown = this.type === 'predator' ? 220 : 100;
+                this.lastReproductionTime = this.ageInTicks;
+                
+                let newX, newY;
+                
+                if (this.type === 'plant') {
+                    let nearbyPlants = 0;
+                    const checkRadius = 100;
+                    
+                    for (const org of organisms) {
+                        if (org !== this && org.type === 'plant') {
+                            const dist = Math.sqrt((org.x - this.x) ** 2 + (org.y - this.y) ** 2);
+                            if (dist < checkRadius) {
+                                nearbyPlants++;
+                            }
+                        }
+                    }
+                    
+                    const baseDist = this.size * 2;
+                    const densityFactor = Math.min(5, 1 + (nearbyPlants / 5));
+                    const spreadDistance = baseDist * densityFactor * (0.8 + Math.random() * 0.4);
+                    
+                    const maxAttempts = 6;
+                    let bestAngle = 0;
+                    let maxDistanceToOthers = 0;
+                    
+                    for (let i = 0; i < maxAttempts; i++) {
+                        const testAngle = Math.random() * Math.PI * 2;
+                        const testX = this.x + Math.cos(testAngle) * spreadDistance;
+                        const testY = this.y + Math.sin(testAngle) * spreadDistance;
+                        
+                        if (boundaryEnabled && (testX < this.size || testX > width - this.size || 
+                                            testY < this.size || testY > height - this.size)) {
+                            continue;
+                        }
+                        
+                        let minDistanceToOthers = Infinity;
+                        for (const org of organisms) {
+                            if (org !== this && org.type === 'plant') {
+                                const dist = Math.sqrt((org.x - testX) ** 2 + (org.y - testY) ** 2);
+                                minDistanceToOthers = Math.min(minDistanceToOthers, dist);
+                            }
+                        }
+                        
+                        if (minDistanceToOthers > maxDistanceToOthers) {
+                            maxDistanceToOthers = minDistanceToOthers;
+                            bestAngle = testAngle;
+                        }
+                    }
+                    
+                    newX = this.x + Math.cos(bestAngle) * spreadDistance;
+                    newY = this.y + Math.sin(bestAngle) * spreadDistance;
+                    
+                    const plantCount = organisms.filter(o => o.type === 'plant').length;
+                    const minRequiredDistance = Math.max(10, 20 - (plantCount / 100));
+                    
+                    if (maxDistanceToOthers < minRequiredDistance) {
+                        return;
+                    }
+                } else {
+                    const offsetDistance = this.size * 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    newX = this.x + Math.cos(angle) * offsetDistance;
+                    newY = this.y + Math.sin(angle) * offsetDistance;
+                }
+                
+                if (boundaryEnabled) {
+                    newX = Math.max(this.size, Math.min(width - this.size, newX));
+                    newY = Math.max(this.size, Math.min(height - this.size, newY));
+                } else {
+                    if (newX < 0) newX = width + newX;
+                    if (newX > width) newX = newX - width;
+                    if (newY < 0) newY = height + newY;
+                    if (newY > height) newY = newY - height;
+                }
+                
+                const offspring = new Organism(newX, newY, this.type, this);
+                offspring.energy = this.birthEnergyCost;
+                
+                organisms.push(offspring);
+            }
+            
+            distanceTo(other) {
+                return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+            }
+        }
+        
+        function generateName(type) {
+            const nameList = type === 'predator' ? predatorNames : 
+                            type === 'prey' ? preyNames : plantNames;
+            
+            const name = nameList[Math.floor(Math.random() * nameList.length)];
+            const suffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            
+            return `${name}-${suffix}`;
+        }
+
+        function updateOrganisms() {
+            let deadIndices = [];
+            
+            for (let i = 0; i < organisms.length; i++) {
+                const isAlive = organisms[i].update();
+                if (!isAlive) {
+                    deadIndices.push(i);
+                }
+            }
+            
+            for (let i = deadIndices.length - 1; i >= 0; i--) {
+                organisms.splice(deadIndices[i], 1);
+            }
+            
+            totalPopulations = {
+                'predator': organisms.filter(o => o.type === 'predator').length,
+                'prey': organisms.filter(o => o.type === 'prey').length,
+                'plant': organisms.filter(o => o.type === 'plant').length
+            };
+            
+            populationHistory.predator.push(totalPopulations.predator);
+            populationHistory.predator.shift();
+            populationHistory.prey.push(totalPopulations.prey);
+            populationHistory.prey.shift();
+            populationHistory.plant.push(totalPopulations.plant);
+            populationHistory.plant.shift();
+            
+            organismCounter.textContent = organisms.length;
+            plantCounter.textContent = totalPopulations.plant;
+            
+            calculateEcosystemBalance();
+        }     
+        
+        function calculateEcosystemBalance() {
+            const totalOrganisms = organisms.length;
+            if (totalOrganisms === 0) {
+                ecosystemBalance = 0.5;
+                return;
+            }
+            
+            const predatorRatio = totalPopulations.predator / totalOrganisms;
+            const preyRatio = totalPopulations.prey / totalOrganisms;
+            const plantRatio = totalPopulations.plant / totalOrganisms;
+            
+            const idealPredatorRatio = 0.1;
+            const idealPreyRatio = 0.5;
+            const idealPlantRatio = 1;
+            
+            const predatorBalance = 1 - Math.min(1, Math.abs(predatorRatio - idealPredatorRatio) * 5);
+            const preyBalance = 1 - Math.min(1, Math.abs(preyRatio - idealPreyRatio) * 3);
+            const plantBalance = 1 - Math.min(1, Math.abs(plantRatio - idealPlantRatio) * 3);
+            
+            ecosystemBalance = (predatorBalance * 0.3 + preyBalance * 0.3 + plantBalance * 0.4);
+            
+            balanceIndicator.style.opacity = ecosystemBalance;
+        }
+
+        function updateSimulation() {
+            updateOrganisms();
+            
+            const plantCount = organisms.filter(o => o.type === 'plant').length;
+            const totalArea = width * height;
+            const plantDensity = plantCount / totalArea;
+            
+            const baseSpawnChance = 0.05 * plantGrowthRate;
+            const adjustedSpawnChance = baseSpawnChance * (1 - (plantCount / 1500));
+            
+            if (plantCount < 1000 && Math.random() < adjustedSpawnChance) {
+                const attempts = 8;
+                let bestX = 0, bestY = 0;
+                let maxMinDistance = 0;
+                
+                for (let i = 0; i < attempts; i++) {
+                    let quadrantCounts = [0, 0, 0, 0];
+                    
+                    for (const org of organisms) {
+                        if (org.type === 'plant') {
+                            const quadX = org.x < width/2 ? 0 : 1;
+                            const quadY = org.y < height/2 ? 0 : 1;
+                            const quadrant = quadY * 2 + quadX;
+                            quadrantCounts[quadrant]++;
+                        }
+                    }
+                    
+                    const minCount = Math.min(...quadrantCounts);
+                    const leastPopulatedQuadrants = [];
+                    
+                    for (let q = 0; q < 4; q++) {
+                        if (quadrantCounts[q] <= minCount + 5) {
+                            leastPopulatedQuadrants.push(q);
+                        }
+                    }
+                    
+                    const targetQuadrant = leastPopulatedQuadrants[Math.floor(Math.random() * leastPopulatedQuadrants.length)];
+                    const quadX = targetQuadrant % 2;
+                    const quadY = Math.floor(targetQuadrant / 2);
+                    
+                    const testX = (quadX * 0.5 + Math.random() * 0.5) * width;
+                    const testY = (quadY * 0.5 + Math.random() * 0.5) * height;
+                    
+                    let minDistance = Infinity;
+                    for (const org of organisms) {
+                        if (org.type === 'plant') {
+                            const dist = Math.sqrt((org.x - testX) ** 2 + (org.y - testY) ** 2);
+                            minDistance = Math.min(minDistance, dist);
+                        }
+                    }
+                    
+                    if (minDistance > maxMinDistance) {
+                        maxMinDistance = minDistance;
+                        bestX = testX;
+                        bestY = testY;
+                    }
+                }
+                
+                const requiredDistance = Math.max(15, 35 - (plantDensity * 5000));
+                
+                if (maxMinDistance > requiredDistance) {
+                    organisms.push(new Organism(bestX, bestY, 'plant'));
+                }
+            }
+            
+            const predatorCount = totalPopulations.predator;
+            const preyCount = totalPopulations.prey;
+            
+            if (predatorCount === 0 && !extinctionAlertShown.predator && preyCount > 0) {
+                showModal("Extinction Alert", "Predators have gone extinct in the ecosystem.");
+                extinctionAlertShown.predator = true;
+            }
+            
+            if (preyCount === 0 && !extinctionAlertShown.prey && predatorCount > 0) {
+                showModal("Extinction Alert", "Prey have gone extinct in the ecosystem.");
+                extinctionAlertShown.prey = true;
+            }
+            
+            if (preyCount > 10 && extinctionAlertShown.prey) {
+                extinctionAlertShown.prey = false;
+            }
+            
+            if (predatorCount > 5 && extinctionAlertShown.predator) {
+                extinctionAlertShown.predator = false;
+            }
+        }
+        
+        function setupTrailCanvas() {
+            trailCanvas = document.createElement('canvas');
+            trailCanvas.width = width;
+            trailCanvas.height = height;
+            trailCtx = trailCanvas.getContext('2d', { alpha: true });
+            trailCtx.fillStyle = currentTheme.background;
+            trailCtx.fillRect(0, 0, width, height);
+        }
+        
+        function renderTrails() {
+            trailCtx.fillStyle = `rgba(${parseInt(currentTheme.background.substring(1, 3), 16)}, 
+                                      ${parseInt(currentTheme.background.substring(3, 5), 16)}, 
+                                      ${parseInt(currentTheme.background.substring(5, 7), 16)}, 0.1)`;
+            trailCtx.fillRect(0, 0, width, height);
+            
+            for (let i = 0; i < organisms.length; i++) {
+                const organism = organisms[i];
+                if (organism.trailPositions.length < 2) continue;
+                
+                trailCtx.strokeStyle = organism.color;
+                trailCtx.lineWidth = organism.size / 2;
+                trailCtx.beginPath();
+                trailCtx.moveTo(organism.trailPositions[0].x, organism.trailPositions[0].y);
+                
+                for (let j = 1; j < organism.trailPositions.length; j++) {
+                    trailCtx.lineTo(organism.trailPositions[j].x, organism.trailPositions[j].y);
+                }
+                
+                trailCtx.stroke();
+            }
+            
+            offscreenCtx.drawImage(trailCanvas, 0, 0);
+        }
+        
+        function renderOrganisms() {
+            for (let i = 0; i < organisms.length; i++) {
+                const organism = organisms[i];
+                
+                let color = organism.color;
+                if (organism.energy < 30) {
+                    const t = organism.energy / 30;
+                    color = chroma.mix(color, '#ff0000', 1 - t).hex();
+                }
+                
+                if (organism.children.length > 0) {
+                    offscreenCtx.strokeStyle = chroma(color).brighten(1).hex();
+                    offscreenCtx.lineWidth = 0.01;
+                    offscreenCtx.beginPath();
+                    offscreenCtx.arc(organism.x, organism.y, organism.size * 1.8, 0, Math.PI * 2);
+                }
+                
+                offscreenCtx.fillStyle = color;
+                
+                if (organism.type === 'predator') {
+                    const headingAngle = Math.atan2(organism.vy, organism.vx);
+                    const bodySize = organism.size;
+                    
+                    if (organism.hiding) {
+                        offscreenCtx.globalAlpha = 0.6;
+                        
+                        const eyeSize = bodySize * 0.3;
+                        const eyeDistance = bodySize * 0.4;
+                        
+                        offscreenCtx.fillStyle = '#ff0000';
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x - eyeDistance, organism.y - bodySize * 0.1, eyeSize, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x + eyeDistance, organism.y - bodySize * 0.1, eyeSize, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.globalAlpha = 1.0;
+                    } else {
+                        const bodyColor = color;
+                        const abdomenSize = bodySize * 1.3;
+                        const headSize = bodySize * 0.9;
+                        const abdomenDistance = headSize * 0.7;
+                        
+                        const headX = organism.x;
+                        const headY = organism.y;
+                        const abdomenX = headX - Math.cos(headingAngle) * abdomenDistance;
+                        const abdomenY = headY - Math.sin(headingAngle) * abdomenDistance;
+                        
+                        offscreenCtx.fillStyle = chroma(bodyColor).darken(0.2).hex();
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(
+                            abdomenX, abdomenY, 
+                            abdomenSize, abdomenSize * 0.8, 
+                            headingAngle, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.fillStyle = bodyColor;
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(
+                            headX, headY, 
+                            headSize, headSize * 0.7, 
+                            headingAngle, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        // Draw legs
+                        offscreenCtx.strokeStyle = bodyColor;
+                        offscreenCtx.lineWidth = bodySize * 0.25;
+                        
+                        const legCount = 4;
+                        const legLength = bodySize * 2;
+                        const legSpacing = headSize * 1.5;
+                        
+                        for (let j = 0; j < legCount; j++) {
+                            const legBaseOffset = (j - (legCount - 1) / 2) * (legSpacing / legCount);
+                            const legBaseX = headX - Math.cos(headingAngle) * legBaseOffset;
+                            const legBaseY = headY - Math.sin(headingAngle) * legBaseOffset;
+                            
+                            const leftAngle = headingAngle + Math.PI/2 + (j * 0.2 - 0.3);
+                            const leftLegEndX = legBaseX + Math.cos(leftAngle) * legLength;
+                            const leftLegEndY = legBaseY + Math.sin(leftAngle) * legLength;
+                            
+                            const rightAngle = headingAngle - Math.PI/2 - (j * 0.2 - 0.3);
+                            const rightLegEndX = legBaseX + Math.cos(rightAngle) * legLength;
+                            const rightLegEndY = legBaseY + Math.sin(rightAngle) * legLength;
+                            
+                            const drawLegWithJoint = (startX, startY, angle, length) => {
+                                const midX = startX + Math.cos(angle) * (length * 0.5);
+                                const midY = startY + Math.sin(angle) * (length * 0.5);
+                                const jointAngle = angle + (Math.sin(organism.ageInTicks * 0.05 + j) * 0.3);
+                                const endX = midX + Math.cos(jointAngle) * (length * 0.6);
+                                const endY = midY + Math.sin(jointAngle) * (length * 0.6);
+                                
+                                offscreenCtx.beginPath();
+                                offscreenCtx.moveTo(startX, startY);
+                                offscreenCtx.lineTo(midX, midY);
+                                offscreenCtx.lineTo(endX, endY);
+                                offscreenCtx.stroke();
+                            };
+                            
+                            drawLegWithJoint(legBaseX, legBaseY, leftAngle, legLength);
+                            drawLegWithJoint(legBaseX, legBaseY, rightAngle, legLength);
+                        }
+                        
+                        const eyeSize = headSize * 0.3;
+                        const eyeDistance = headSize * 0.4;
+                        const eyeOffsetX = Math.cos(headingAngle) * (headSize * 0.3);
+                        const eyeOffsetY = Math.sin(headingAngle) * (headSize * 0.3);
+                        
+                        offscreenCtx.fillStyle = '#ff0000';
+                        
+        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + eyeOffsetX + Math.cos(headingAngle + Math.PI/2) * eyeDistance,
+                            headY + eyeOffsetY + Math.sin(headingAngle + Math.PI/2) * eyeDistance,
+                            eyeSize, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + eyeOffsetX + Math.cos(headingAngle - Math.PI/2) * eyeDistance,
+                            headY + eyeOffsetY + Math.sin(headingAngle - Math.PI/2) * eyeDistance,
+                            eyeSize, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        if (organism.lastMeal > organism.ageInTicks - 10) {
+                            offscreenCtx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                            offscreenCtx.lineWidth = 2;
+                            offscreenCtx.beginPath();
+                            offscreenCtx.arc(organism.x, organism.y, organism.size * 1.5, 0, Math.PI * 2);
+                            offscreenCtx.stroke();
+                        }
+                    }
+                } else if (organism.type === 'prey') {
+                    if (organism.hiding) {
+                        offscreenCtx.fillStyle = color;
+                        offscreenCtx.globalAlpha = 0.3;
+                        
+                        const eyeSize = organism.size * 0.3;
+                        offscreenCtx.fillStyle = '#ffffff';
+                        offscreenCtx.globalAlpha = 0.5;
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x - organism.size * 0.3, organism.y - organism.size * 0.1, eyeSize, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x + organism.size * 0.3, organism.y - organism.size * 0.1, eyeSize, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.fillStyle = '#000000';
+                        offscreenCtx.globalAlpha = 0.7;
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x - organism.size * 0.3, organism.y - organism.size * 0.1, eyeSize * 0.5, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x + organism.size * 0.3, organism.y - organism.size * 0.1, eyeSize * 0.5, 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.globalAlpha = 1.0;
+                    } else {
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(organism.x, organism.y, organism.size * 1.2, organism.size * 0.8, Math.atan2(organism.vy, organism.vx), 0, Math.PI * 2);
+                        offscreenCtx.fill();
+                        
+                        const headingAngle = Math.atan2(organism.vy, organism.vx);
+                        const headX = organism.x + Math.cos(headingAngle) * organism.size * 0.8;
+                        const headY = organism.y + Math.sin(headingAngle) * organism.size * 0.8;
+                        
+                        offscreenCtx.fillStyle = '#ffffff';
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + Math.cos(headingAngle + Math.PI/4) * organism.size * 0.5,
+                            headY + Math.sin(headingAngle + Math.PI/4) * organism.size * 0.5,
+                            organism.size * 0.3, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + Math.cos(headingAngle - Math.PI/4) * organism.size * 0.5,
+                            headY + Math.sin(headingAngle - Math.PI/4) * organism.size * 0.5,
+                            organism.size * 0.3, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.fillStyle = '#000000';
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + Math.cos(headingAngle + Math.PI/4) * organism.size * 0.5 + Math.cos(headingAngle) * organism.size * 0.15,
+                            headY + Math.sin(headingAngle + Math.PI/4) * organism.size * 0.5 + Math.sin(headingAngle) * organism.size * 0.15,
+                            organism.size * 0.15, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            headX + Math.cos(headingAngle - Math.PI/4) * organism.size * 0.5 + Math.cos(headingAngle) * organism.size * 0.15,
+                            headY + Math.sin(headingAngle - Math.PI/4) * organism.size * 0.5 + Math.sin(headingAngle) * organism.size * 0.15,
+                            organism.size * 0.15, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        const earSize = organism.size * 0.5;
+                        offscreenCtx.fillStyle = color;
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(
+                            headX + Math.cos(headingAngle + Math.PI/3) * organism.size * 0.7,
+                            headY + Math.sin(headingAngle + Math.PI/3) * organism.size * 0.7,
+                            earSize * 0.4, earSize * 0.8, headingAngle + Math.PI/3, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(
+                            headX + Math.cos(headingAngle - Math.PI/3) * organism.size * 0.7,
+                            headY + Math.sin(headingAngle - Math.PI/3) * organism.size * 0.7,
+                            earSize * 0.4, earSize * 0.8, headingAngle - Math.PI/3, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                    }
+                } else if (organism.type === 'plant') {
+                    const baseSize = organism.size;
+                    const stemHeight = baseSize * 4;
+                    const leafCount = 3 + Math.floor(organism.energy / 40);
+                    
+                    const gradient = offscreenCtx.createLinearGradient(
+                        organism.x, organism.y, 
+                        organism.x, organism.y - stemHeight
+                    );
+                    gradient.addColorStop(0, '#8B4513');
+                    gradient.addColorStop(1, '#006400');
+                    
+                    offscreenCtx.strokeStyle = gradient;
+                    offscreenCtx.lineWidth = baseSize * 0.8;
+                    offscreenCtx.beginPath();
+                    offscreenCtx.moveTo(organism.x, organism.y);
+                    offscreenCtx.lineTo(organism.x, organism.y - stemHeight);
+                    offscreenCtx.stroke();
+                    
+                    const normalizedEnergy = Math.min(1, organism.energy / organism.maxEnergy);
+                    const leafSize = baseSize * (1 + normalizedEnergy);
+                    
+                    offscreenCtx.fillStyle = color;
+                    
+                    for (let j = 0; j < leafCount; j++) {
+                        const angle = (j / leafCount) * Math.PI * 2;
+                        const leafX = organism.x + Math.cos(angle) * baseSize * 2;
+                        const leafY = organism.y - stemHeight * 0.7 + Math.sin(angle) * baseSize;
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.ellipse(
+                            leafX, leafY, 
+                            leafSize, leafSize * 2, 
+                            angle + Math.PI/2, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                    }
+                    
+                    offscreenCtx.fillStyle = chroma(color).brighten(1).hex();
+                    offscreenCtx.beginPath();
+                    offscreenCtx.arc(
+                        organism.x, organism.y - stemHeight, 
+                        baseSize * 1.5, 0, Math.PI * 2
+                    );
+                    offscreenCtx.fill();
+                    
+                    offscreenCtx.fillStyle = chroma(color).darken(1).hex();
+                    offscreenCtx.beginPath();
+                    offscreenCtx.arc(
+                        organism.x, organism.y, 
+                        baseSize * 0.8, 0, Math.PI * 2
+                    );
+                    offscreenCtx.fill();
+                    
+                    const hidingCount = organisms.filter(o => o.hiding && o.hidingPlant === organism).length;
+                    if (hidingCount > 0) {
+                        const plantTopY = organism.y - stemHeight;
+                        
+                        offscreenCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(
+                            organism.x, plantTopY, 
+                            baseSize * 1.8, 0, Math.PI * 2
+                        );
+                        offscreenCtx.fill();
+                    }
+                }
+                
+                if (organism.type !== 'plant' && !organism.hiding) {
+                    const speedVector = Math.sqrt(organism.vx * organism.vx + organism.vy * organism.vy);
+                    if (speedVector > 0.5) {
+                        const headingX = organism.x + organism.vx * 5;
+                        const headingY = organism.y + organism.vy * 5;
+                        
+                        offscreenCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                        offscreenCtx.lineWidth = 0.05;
+                        offscreenCtx.beginPath();
+                        offscreenCtx.moveTo(organism.x, organism.y);
+                        offscreenCtx.lineTo(headingX, headingY);
+                        offscreenCtx.stroke();
+                    }
+                    
+                    if (organism.fleeing) {
+                        offscreenCtx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                        offscreenCtx.lineWidth = 2;
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(organism.x, organism.y, organism.size * 1.5, 0, Math.PI * 2);
+                        offscreenCtx.stroke();
+                    }
+                }
+            }
+        }
+        
+        function renderPopulationChart() {
+            if (!showCharts) return;
+            
+            const chartWidth = 150;
+            const chartHeight = 80;
+            const margin = 5;
+            const x = width - chartWidth - margin;
+            const y = height - chartHeight - margin;
+            
+            offscreenCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            offscreenCtx.fillRect(x, y, chartWidth, chartHeight);
+            offscreenCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            offscreenCtx.strokeRect(x, y, chartWidth, chartHeight);
+            
+            const maxPopulation = Math.max(
+                Math.max(...populationHistory.predator),
+                Math.max(...populationHistory.prey),
+                10
+            );
+            
+            const historyLength = populationHistory.predator.length;
+            
+            function drawPopulationLine(data, color) {
+                offscreenCtx.strokeStyle = color;
+                offscreenCtx.lineWidth = 2;
+                offscreenCtx.beginPath();
+                
+                for (let i = 0; i < historyLength; i++) {
+                    const xPos = x + (i / (historyLength - 1)) * chartWidth;
+                    const yPos = y + chartHeight - (data[i] / maxPopulation) * chartHeight;
+                    
+                    if (i === 0) {
+                        offscreenCtx.moveTo(xPos, yPos);
+                    } else {
+                        offscreenCtx.lineTo(xPos, yPos);
+                    }
+                }
+                
+                offscreenCtx.stroke();
+            }
+            
+            drawPopulationLine(populationHistory.predator, currentTheme.species.predator);
+            drawPopulationLine(populationHistory.prey, currentTheme.species.prey);
+            
+            offscreenCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            offscreenCtx.font = '10px sans-serif';
+            offscreenCtx.fillText('Population', x + 5, y + 12);
+        }
+        
+        function render() {
+            offscreenCtx.fillStyle = currentTheme.background;
+            offscreenCtx.fillRect(0, 0, width, height);
+            
+            if (showTrails) {
+                renderTrails();
+            }
+            
+            renderOrganisms();
+            renderPopulationChart();
+            
+            offscreenCtx.fillStyle = chroma.mix('#ff0000', '#00ff00', ecosystemBalance).hex();
+            offscreenCtx.globalAlpha = 0.8;
+            offscreenCtx.fillRect(width - 80, 10, 70, 10);
+            offscreenCtx.globalAlpha = 1.0;
+            
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(offscreenCanvas, 0, 0);
+        }
+        
+        function updateTimeCounter() {
+            const totalSeconds = Math.floor(simulationElapsedTime / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            timeCounter.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastUpdateTime) lastUpdateTime = timestamp;
+            const elapsed = timestamp - lastUpdateTime;
+            
+            if (elapsed > updateInterval) {
+                updateSimulation();
+                render();
+                lastUpdateTime = timestamp;
+                
+                simulationElapsedTime = Date.now() - simulationStartTime;
+                updateTimeCounter();
+            }
+            
+            calculateFPS(timestamp);
+            
+            if (isRunning) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+                
+        function calculateFPS(timestamp) {
+            frameCount++;
+            if (timestamp - lastFpsUpdateTime >= fpsUpdateInterval) {
+                currentFps = Math.round(frameCount * 1000 / (timestamp - lastFpsUpdateTime));
+                frameCount = 0;
+                lastFpsUpdateTime = timestamp;
+                fpsCounter.textContent = currentFps;
+                
+                updateSpeciesList();
+            }
+        }
+        
+        function updateSpeciesList() {
+            speciesList.innerHTML = '';
+            
+            const types = ['predator', 'prey', 'plant'];
+            const displayNames = {
+                'predator': 'Predators',
+                'prey': 'Prey',
+                'plant': 'Plants'
+            };
+            
+            for (const type of types) {
+                const count = totalPopulations[type];
+                const organismsByType = organisms.filter(o => o.type === type);
+                
+                const avgEnergy = organismsByType.length > 0 
+                    ? organismsByType.reduce((sum, o) => sum + o.energy, 0) / organismsByType.length
+                    : 0;
+                
+                const avgAge = organismsByType.length > 0 
+                    ? Math.floor(organismsByType.reduce((sum, o) => sum + o.ageInTicks, 0) / organismsByType.length)
+                    : 0;
+                
+                const maxGen = organismsByType.length > 0 
+                    ? Math.max(...organismsByType.map(o => o.generation))
+                    : 0;
+                
+                const trend = populationHistory[type][populationHistory[type].length - 1] - 
+                            populationHistory[type][populationHistory[type].length - 10];
+                
+                let trendIcon = trend > 5 ? '↑' : trend < -5 ? '↓' : '→';
+                
+                const listItem = document.createElement('div');
+                listItem.className = 'entity-item';
+                listItem.style.borderLeft = `3px solid ${currentTheme.species[type]}`;
+                listItem.innerHTML = `
+                    <strong>${displayNames[type]} ${trendIcon}</strong><br>
+                    Count: ${count} | Avg Energy: ${avgEnergy.toFixed(1)}<br>
+                    Avg Age: ${avgAge} | Max Gen: ${maxGen}
+                `;
+                
+                if (organismsByType.length > 0) {
+                    listItem.style.cursor = 'pointer';
+                    listItem.addEventListener('click', () => {
+                        const oldestOrganism = organismsByType.reduce((oldest, current) => 
+                            current.generation > oldest.generation ? current : oldest, 
+                            organismsByType[0]);
+                        showFamilyTree(oldestOrganism);
+                    });
+                }
+                
+                speciesList.appendChild(listItem);
+            }
+        }
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            offscreenCanvas.width = width;
+            offscreenCanvas.height = height;
+            
+            if (trailCanvas) {
+                trailCanvas.width = width;
+                trailCanvas.height = height;
+                trailCtx.fillStyle = currentTheme.background;
+                trailCtx.fillRect(0, 0, width, height);
+            }
+        }
+        
+        function initThemeSelector() {
+            const themeSelector = document.getElementById('themeSelector');
+            themeSelector.innerHTML = '';
+            
+            colorThemes.forEach((theme, index) => {
+                const themeOption = document.createElement('div');
+                themeOption.className = 'theme-option';
+                themeOption.style.backgroundColor = theme.background;
+                
+                const previewContainer = document.createElement('div');
+                previewContainer.style.display = 'flex';
+                previewContainer.style.gap = '2px';
+                previewContainer.style.flexWrap = 'nowrap';
+                
+                [theme.species.predator, theme.species.prey, theme.species.plant].forEach(color => {
+                    const preview = document.createElement('div');
+                    preview.className = 'color-preview';
+                    preview.style.backgroundColor = color;
+                    previewContainer.appendChild(preview);
+                });
+                
+                themeOption.appendChild(previewContainer);
+                
+                if (theme === currentTheme) {
+                    themeOption.classList.add('selected');
+                }
+                
+                themeOption.addEventListener('click', () => selectTheme(index));
+                themeSelector.appendChild(themeOption);
+            });
+        }
+        
+        function selectTheme(index) {
+            currentTheme = colorThemes[index];
+            updateSelectedTheme();
+            updateGameColors();
+        }
+        
+        function updateSelectedTheme() {
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach((option, index) => {
+                option.classList.toggle('selected', colorThemes[index] === currentTheme);
+            });
+        }
+        
+        function updateGameColors() {
+            document.body.style.backgroundColor = currentTheme.background;
+            document.body.style.color = currentTheme.primary;
+            
+            for (let i = 0; i < organisms.length; i++) {
+                organisms[i].color = organisms[i].getBaseColor();
+            }
+        }
+        
+        function updatePanelVisibility() {
+            const sidePanel = document.querySelector('.side-panel');
+            const isCollapsed = sidePanel.classList.contains('collapsed');
+            const controls = document.querySelectorAll('.control-group, .entity-list, .theme-selector');
+            const isMobile = window.innerWidth <= 768;
+            
+            requestAnimationFrame(() => {
+                sidePanel.style.width = isCollapsed ? '0' : '250px';
+                sidePanel.style.padding = isCollapsed ? '0' : '10px';
+                
+                controls.forEach(element => {
+                    element.style.display = isCollapsed ? 'none' : (element.classList.contains('theme-selector') ? 'grid' : 'flex');
+                    element.style.opacity = isCollapsed ? '0' : '1';
+                    element.style.pointerEvents = isCollapsed ? 'none' : 'all';
+                });
+                
+                if (isMobile) {
+                    Object.assign(sidePanel.style, {
+                        position: 'fixed',
+                        right: '10px',
+                        bottom: '10px',
+                        top: 'auto'
+                    });
+                } else {
+                    Object.assign(sidePanel.style, {
+                        position: 'relative',
+                        right: '0',
+                        top: '0',
+                        bottom: '0'
+                    });
+                }
+            });
+        }
+        
+        function initializeSimulation() {
+            organisms = [];
+            
+            generateInitialOrganisms();
+            
+            if (showTrails) {
+                setupTrailCanvas();
+            }
+            
+            predationRate = parseInt(predationRateControl.value) / 100;
+            predationRateValue.textContent = predationRateControl.value;
+            
+            plantGrowthRate = 0.5;
+            plantRateControl.value = plantGrowthRate * 100;
+            plantRateValue.textContent = plantRateControl.value;
+            
+            simulationStartTime = Date.now();
+            simulationElapsedTime = 0;
+            updateTimeCounter();
+            
+            render();
+        }
+
+        function startStopButton() {
+            isRunning = !isRunning;
+            const svg = startStopBtn.querySelector('svg');
+            
+            if (isRunning) {
+                svg.innerHTML = '<path d="M520-200h80v-560h-80v560Zm-160 0h80v-560h-80v560Z"/>';
+                lastUpdateTime = 0;
+                lastFpsUpdateTime = 0;
+                simulationStartTime = Date.now() - simulationElapsedTime;
+                animationId = requestAnimationFrame(gameLoop);
+            } else {
+                svg.innerHTML = '<path d="M320-200v-560l440 280-440 280Z"/>';
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+        }
+        
+        function generateInitialOrganisms() {
+            const initialPredators = 8;
+            const initialPrey = 28;
+            const initialPlants = 305;
+            
+            for (let i = 0; i < initialPredators; i++) {
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'predator'
+                ));
+            }
+            
+            for (let i = 0; i < initialPrey; i++) {
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'prey'
+                ));
+            }
+            
+            for (let i = 0; i < initialPlants; i++) {
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'plant'
+                ));
+            }
+            
+            organismCounter.textContent = organisms.length;
+            plantCounter.textContent = initialPlants;
+        }        
+
+        function addNewOrganism(type) {
+            if (type === 'prey') {
+                const preyCount = organisms.filter(o => o.type === 'prey').length;
+                if (preyCount >= 500) return;
+            }
+            
+            const newOrganism = new Organism(
+                Math.random() * width,
+                Math.random() * height,
+                type
+            );
+            organisms.push(newOrganism);
+            organismCounter.textContent = organisms.length;
+        }
+
+        function saveSimulationState() {
+            const flattenedOrganisms = [];
+            const parentChildMap = new Map();
+            
+            organisms.forEach(o => {
+                flattenedOrganisms.push({
+                    x: o.x,
+                    y: o.y,
+                    vx: o.vx,
+                    vy: o.vy,
+                    type: o.type,
+                    size: o.size,
+                    energy: o.energy,
+                    maxEnergy: o.maxEnergy,
+                    ageInTicks: o.ageInTicks,
+                    reproductionCooldown: o.reproductionCooldown,
+                    lastMeal: o.lastMeal,
+                    id: o.id,
+                    generation: o.generation,
+                    parentId: o.parent ? o.parent.id : null,
+                    childrenIds: o.children.map(child => child.id)
+                });
+                
+                if (o.parent) {
+                    if (!parentChildMap.has(o.parent.id)) {
+                        parentChildMap.set(o.parent.id, []);
+                    }
+                    parentChildMap.get(o.parent.id).push(o.id);
+                }
+            });
+            
+            const state = {
+                organisms: flattenedOrganisms,
+                parentChildMap: Array.from(parentChildMap.entries()),
+                settings: {
+                    predationRate,
+                    boundaryEnabled,
+                    showTrails,
+                    showCharts,
+                    isRunning
+                },
+                themeIndex: colorThemes.indexOf(currentTheme),
+                populationHistory,
+                simulationStartTime,
+                simulationElapsedTime
+            };
+            
+            localStorage.setItem('ecosystemState', JSON.stringify(state));
+        }
+
+        function loadSimulationState() {
+            const savedState = localStorage.getItem('ecosystemState');
+            if (!savedState) return false;
+            
+            try {
+                const state = JSON.parse(savedState);
+                
+                const organismMap = new Map();
+                
+                organisms = state.organisms.map(o => {
+                    const organism = new Organism(o.x, o.y, o.type);
+                    organism.vx = o.vx;
+                    organism.vy = o.vy;
+                    organism.size = o.size;
+                    organism.energy = o.energy;
+                    organism.maxEnergy = o.maxEnergy;
+                    organism.ageInTicks = o.ageInTicks;
+                    organism.reproductionCooldown = o.reproductionCooldown;
+                    organism.lastMeal = o.lastMeal;
+                    organism.id = o.id;
+                    organism.generation = o.generation;
+                    
+                    organismMap.set(organism.id, organism);
+                    return organism;
+                });
+                
+                state.organisms.forEach(o => {
+                    if (o.parentId && organismMap.has(o.parentId)) {
+                        const organism = organismMap.get(o.id);
+                        const parent = organismMap.get(o.parentId);
+                        organism.parent = parent;
+                        
+                        if (!parent.children.includes(organism)) {
+                            parent.children.push(organism);
+                        }
+                    }
+                });
+                
+                predationRate = state.settings.predationRate;
+                boundaryEnabled = state.settings.boundaryEnabled;
+                showTrails = state.settings.showTrails;
+                showCharts = state.settings.showCharts;
+                
+                selectTheme(state.themeIndex);
+                
+                populationHistory = state.populationHistory;
+                
+                if (state.simulationStartTime) {
+                    simulationStartTime = state.simulationStartTime;
+                    simulationElapsedTime = state.simulationElapsedTime || 0;
+                } else {
+                    simulationStartTime = Date.now();
+                    simulationElapsedTime = 0;
+                }
+                
+                updateTimeCounter();
+                
+                predationRateControl.value = predationRate * 100;
+                predationRateValue.textContent = predationRateControl.value;
+                
+                boundaryCheckbox.checked = boundaryEnabled;
+                trailsCheckbox.checked = showTrails;
+                chartsCheckbox.checked = showCharts;
+                
+                if (showTrails) {
+                    setupTrailCanvas();
+                }
+                
+                isRunning = state.settings.isRunning;
+                
+                if (isRunning) {
+                    startStopBtn.querySelector('svg').innerHTML = '<path d="M520-200h80v-560h-80v560Zm-160 0h80v-560h-80v560Z"/>';
+                    animationId = requestAnimationFrame(gameLoop);
+                }
+                
+                organismCounter.textContent = organisms.length;
+                
+                render();
+                return true;
+                
+            } catch (error) {
+                console.error('Error loading state:', error);
+                return false;
+            }
+        }
+
+        function showModal(title, message) {
+            const modalOverlay = document.getElementById('modalOverlay');
+            const alertModal = document.getElementById('alertModal');
+            const familyTreeModal = document.getElementById('familyTreeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalClose = document.getElementById('modalClose');
+            const modalOkButton = document.getElementById('modalOkButton');
+            
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalOverlay.style.display = 'flex';
+            alertModal.style.display = 'flex';
+            familyTreeModal.style.display = 'none';
+            
+            const closeModal = () => {
+                modalOverlay.style.display = 'none';
+            };
+            
+            modalClose.onclick = closeModal;
+            modalOkButton.onclick = closeModal;
+            
+            modalOverlay.onclick = (event) => {
+                if (event.target === modalOverlay) {
+                    closeModal();
+                }
+            };
+            
+            const escKeyHandler = function(event) {
+                if (event.key === 'Escape' && modalOverlay.style.display === 'flex') {
+                    closeModal();
+                    document.removeEventListener('keydown', escKeyHandler);
+                }
+            };
+            
+            document.addEventListener('keydown', escKeyHandler);
+        }  
+            
+        function showFamilyTree(organism) {
+            const familyTreeModal = document.getElementById('familyTreeModal');
+            const alertModal = document.getElementById('alertModal');
+            const familyTreeContent = document.getElementById('familyTreeContent');
+            const familyTreeTitle = document.getElementById('familyTreeTitle');
+            const modalOverlay = document.getElementById('modalOverlay');
+            
+            const nameParts = organism.id.split('-');
+            const displayName = nameParts[0];
+            const displayId = nameParts[1];
+            
+            familyTreeTitle.textContent = `Family Tree: ${organism.type.charAt(0).toUpperCase() + organism.type.slice(1)}`;
+            familyTreeContent.innerHTML = '';
+            
+            const addAncestorSection = () => {
+                if (!organism.parent) return null;
+                
+                const section = document.createElement('div');
+                section.className = 'family-section';
+                
+                const heading = document.createElement('h4');
+                heading.textContent = 'Ancestors';
+                section.appendChild(heading);
+                
+                const row = document.createElement('div');
+                row.className = 'family-row';
+                
+                let currentAncestor = organism.parent;
+                let count = 0;
+                const maxDisplay = 3;
+                
+                while (currentAncestor && count < maxDisplay) {
+                    const member = document.createElement('div');
+                    member.className = 'family-member';
+                    member.style.borderLeftColor = currentTheme.species[currentAncestor.type];
+                    
+                    const dot = document.createElement('div');
+                    dot.className = 'member-dot';
+                    dot.style.backgroundColor = currentTheme.species[currentAncestor.type];
+                    
+                    const ancestorName = currentAncestor.id.split('-')[0];
+                    
+                    const details = document.createElement('div');
+                    details.className = 'member-details';
+                    details.textContent = `Gen ${currentAncestor.generation} ${ancestorName}`;
+                    
+                    member.appendChild(dot);
+                    member.appendChild(details);
+                    member.addEventListener('click', () => showFamilyTree(currentAncestor));
+                    
+                    row.appendChild(member);
+                    
+                    currentAncestor = currentAncestor.parent;
+                    count++;
+                }
+                
+                if (organism.parent && organism.parent.parent && count >= maxDisplay) {
+                    const more = document.createElement('div');
+                    more.className = 'more-family';
+                    more.textContent = '... more ancestors';
+                    row.appendChild(more);
+                }
+                
+                section.appendChild(row);
+                return section;
+            };
+            
+            const addChildrenSection = () => {
+                if (organism.children.length === 0) return null;
+                
+                const section = document.createElement('div');
+                section.className = 'family-section';
+                
+                const heading = document.createElement('h4');
+                heading.textContent = `Children (${organism.children.length})`;
+                section.appendChild(heading);
+                
+                const row = document.createElement('div');
+                row.className = 'family-row';
+                
+                const maxDisplay = 6;
+                const childrenToShow = organism.children.slice(0, maxDisplay);
+                
+                childrenToShow.forEach(child => {
+                    const member = document.createElement('div');
+                    member.className = 'family-member';
+                    member.style.borderLeftColor = currentTheme.species[child.type];
+                    
+                    const dot = document.createElement('div');
+                    dot.className = 'member-dot';
+                    dot.style.backgroundColor = currentTheme.species[child.type];
+                    
+                    const childName = child.id.split('-')[0];
+                    
+                    const details = document.createElement('div');
+                    details.className = 'member-details';
+                    details.textContent = `Gen ${child.generation} ${childName}`;
+                    
+                    member.appendChild(dot);
+                    member.appendChild(details);
+                    member.addEventListener('click', () => showFamilyTree(child));
+                    
+                    row.appendChild(member);
+                });
+                
+                if (organism.children.length > maxDisplay) {
+                    const more = document.createElement('div');
+                    more.className = 'more-family';
+                    more.textContent = `... ${organism.children.length - maxDisplay} more children`;
+                    row.appendChild(more);
+                }
+                
+                section.appendChild(row);
+                return section;
+            };
+            
+            const addStatsSection = () => {
+                const section = document.createElement('div');
+                section.className = 'family-section';
+                
+                const heading = document.createElement('h4');
+                heading.textContent = 'Stats';
+                section.appendChild(heading);
+                
+                const stats = document.createElement('div');
+                stats.className = 'stats-row';
+                
+                const addStat = (label, value) => {
+                    const stat = document.createElement('div');
+                    stat.className = 'stat-item';
+                    
+                    const statLabel = document.createElement('span');
+                    statLabel.className = 'stat-label';
+                    statLabel.textContent = label + ':';
+                    
+                    const statValue = document.createElement('span');
+                    statValue.textContent = value;
+                    
+                    stat.appendChild(statLabel);
+                    stat.appendChild(statValue);
+                    stats.appendChild(stat);
+                };
+                
+                addStat('Name', displayName);
+                addStat('ID', displayId);
+                addStat('Generation', organism.generation);
+                addStat('Age', Math.floor(organism.ageInTicks / 100));
+                addStat('Energy', Math.floor(organism.energy));
+                addStat('Children', organism.children.length);
+                
+                const descendants = countDescendants(organism);
+                addStat('Descendants', descendants);
+                
+                section.appendChild(stats);
+                return section;
+            };
+            
+            const ancestorSection = addAncestorSection();
+            if (ancestorSection) {
+                familyTreeContent.appendChild(ancestorSection);
+            }
+            
+            familyTreeContent.appendChild(addStatsSection());
+            
+            const childrenSection = addChildrenSection();
+            if (childrenSection) {
+                familyTreeContent.appendChild(childrenSection);
+            }
+            
+            alertModal.style.display = 'none';
+            familyTreeModal.style.display = 'flex';
+            modalOverlay.style.display = 'flex';
+            
+            const closeModal = () => {
+                modalOverlay.style.display = 'none';
+            };
+            
+            document.getElementById('familyTreeClose').onclick = closeModal;
+            document.getElementById('familyTreeOkButton').onclick = closeModal;
+            
+            modalOverlay.onclick = (event) => {
+                if (event.target === modalOverlay) {
+                    closeModal();
+                }
+            };
+        }
+        
+        function countDescendants(organism) {
+            let count = 0;
+            
+            function countChildren(org) {
+                count += org.children.length;
+                org.children.forEach(child => countChildren(child));
+            }
+            
+            countChildren(organism);
+            return count;
+        }
+        
+        function handleCanvasClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+            
+            const clickRadius = 20;
+            let clickedOrganism = null;
+            
+            for (let i = 0; i < organisms.length; i++) {
+                const organism = organisms[i];
+                const distance = Math.sqrt((organism.x - x) ** 2 + (organism.y - y) ** 2);
+                
+                if (distance < clickRadius) {
+                    clickedOrganism = organism;
+                    break;
+                }
+            }
+            
+            if (clickedOrganism) {
+                showFamilyTree(clickedOrganism);
+            } else {
+                const preyCount = organisms.filter(o => o.type === 'prey').length;
+                if (preyCount >= 500) return;
+                
+                const newOrganism = new Organism(x, y, 'prey');
+                organisms.push(newOrganism);
+                organismCounter.textContent = organisms.length;
+                
+                if (!isRunning) {
+                    render();
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+                    const isMobile = window.innerWidth <= 768;
+                    const sidePanel = document.querySelector('.side-panel');
+                    
+                    if (isMobile) {
+                        Object.assign(sidePanel.style, {
+                            position: 'fixed',
+                            right: '10px',
+                            bottom: '10px',
+                            top: 'auto'
+                        });
+                    } else {
+                        Object.assign(sidePanel.style, {
+                            position: 'relative',
+                            right: '0',
+                            top: '0',
+                            bottom: '0'
+                        });
+                    }
+                    
+                    updatePanelVisibility();
+                    resizeCanvas();
+                });
+                
+        const togglePanel = document.querySelector('.toggle-panel');
+        const sidePanel = document.querySelector('.side-panel');
+        
+        togglePanel.addEventListener('click', () => {
+            sidePanel.classList.toggle('collapsed');
+            const svg = togglePanel.querySelector('svg');
+            svg.style.transform = sidePanel.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+            
+            requestAnimationFrame(() => {
+                updatePanelVisibility();
+            });
+        });
+        
+        startStopBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            const svg = startStopBtn.querySelector('svg');
+            
+            if (isRunning) {
+                svg.innerHTML = '<path d="M520-200h80v-560h-80v560Zm-160 0h80v-560h-80v560Z"/>';
+                lastUpdateTime = 0;
+                lastFpsUpdateTime = 0;
+                animationId = requestAnimationFrame(gameLoop);
+            } else {
+                svg.innerHTML = '<path d="M320-200v-560l440 280-440 280Z"/>';
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            const modalOverlay = document.getElementById('modalOverlay');
+            const alertModal = document.getElementById('alertModal');
+            const familyTreeModal = document.getElementById('familyTreeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalClose = document.getElementById('modalClose');
+            const modalOkButton = document.getElementById('modalOkButton');
+            
+            modalTitle.textContent = "Reset Simulation";
+            modalMessage.textContent = "Reset the simulation? This will clear all changes.";
+            modalOverlay.style.display = 'flex';
+            alertModal.style.display = 'flex';
+            familyTreeModal.style.display = 'none';
+            
+            const closeModal = () => {
+                modalOverlay.style.display = 'none';
+                modalOkButton.onclick = null;
+                document.removeEventListener('keydown', escKeyHandler);
+            };
+            
+            const resetSimulation = () => {
+                localStorage.removeItem('ecosystemState');
+                
+                if (isRunning) {
+                    isRunning = false;
+                    startStopBtn.querySelector('svg').innerHTML = '<path d="M320-200v-560l440 280-440 280Z"/>';
+                    cancelAnimationFrame(animationId);
+                }
+                
+                initializeSimulation();
+                closeModal();
+            };
+            
+            modalClose.onclick = closeModal;
+            modalOkButton.onclick = resetSimulation;
+            
+            modalOverlay.onclick = (event) => {
+                if (event.target === modalOverlay) {
+                    closeModal();
+                }
+            };
+            
+            const escKeyHandler = function(event) {
+                if (event.key === 'Escape' && modalOverlay.style.display === 'flex') {
+                    closeModal();
+                }
+            };
+            
+            document.addEventListener('keydown', escKeyHandler);
+        });    
+        
+        speedControl.addEventListener('input', () => {
+            speedValue.textContent = speedControl.value;
+            timeStep = speedControl.value / 50;
+        });
+        
+        plantRateControl.addEventListener('input', () => {
+            plantRateValue.textContent = plantRateControl.value;
+            plantGrowthRate = plantRateControl.value / 100;
+        });
+        
+        predationRateControl.addEventListener('input', () => {
+            predationRateValue.textContent = predationRateControl.value;
+            predationRate = parseInt(predationRateControl.value) / 100;
+        });
+        
+        boundaryCheckbox.addEventListener('change', () => {
+            boundaryEnabled = boundaryCheckbox.checked;
+        });
+        
+        trailsCheckbox.addEventListener('change', () => {
+            showTrails = trailsCheckbox.checked;
+            if (showTrails && !trailCanvas) {
+                setupTrailCanvas();
+            }
+        });
+        
+        chartsCheckbox.addEventListener('change', () => {
+            showCharts = chartsCheckbox.checked;
+        });
+        
+        addPreyBtn.addEventListener('click', () => {
+            addNewOrganism('prey');
+        });
+        
+        addPredatorBtn.addEventListener('click', () => {
+            addNewOrganism('predator');
+        });
+        
+        addPlantBtn.addEventListener('click', () => {
+            addNewOrganism('plant');
+        });
+        
+        canvas.addEventListener('click', handleCanvasClick);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showModal("Welcome to Ecosystem Simulation", "Watch the balance of predators, prey, and plants evolve over time. Use the controls to adjust simulation parameters.");
+        });
+        
+        const autoSaveInterval = setInterval(saveSimulationState, 30000);
+        window.addEventListener('beforeunload', saveSimulationState);
+        
+        resizeCanvas();
+        initThemeSelector();
+        
+        if (!loadSimulationState()) {
+            initializeSimulation();
+        }
+    </script>
+</body>
+</html>
