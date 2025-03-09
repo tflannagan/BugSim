@@ -985,7 +985,7 @@
                 
                 this.perceptionRadius = type === 'predator' ? 145 : type === 'prey' ? 150 : 40;
                 this.catchRadius = type === 'predator' ? this.size * 1.5 : this.size * 1.5;
-                this.maxSpeed = type === 'predator' ? 2.5 : type === 'prey' ? (type === 'prey' && this.species === 'butterfly' ? 2.9 : 2.6) : 0.5;
+                this.maxSpeed = type === 'predator' ? 2.5 : type === 'prey' ? 2.6 : 0.5;
                 this.acceleration = type === 'predator' ? 0.25 : type === 'prey' ? 0.2 : 0.05;
                 this.birthEnergyCost = type === 'predator' ? 30 : 25;
                 this.preyCatchBonus = 60;
@@ -2902,40 +2902,40 @@
         }
         
         function generateInitialOrganisms() {
-    const initialPredators = 8;
-    const initialPrey = 28;
-    const initialPlants = 305;
-    
-    for (let i = 0; i < initialPredators; i++) {
-        organisms.push(new Organism(
-            Math.random() * width,
-            Math.random() * height,
-            'predator'
-        ));
-    }
-    
-    for (let i = 0; i < initialPrey; i++) {
-        const speciesIndex = i % preySpecies.length;
-        organisms.push(new Organism(
-            Math.random() * width,
-            Math.random() * height,
-            'prey',
-            null,
-            preySpecies[speciesIndex]
-        ));
-    }
-    
-    for (let i = 0; i < initialPlants; i++) {
-        organisms.push(new Organism(
-            Math.random() * width,
-            Math.random() * height,
-            'plant'
-        ));
-    }
-    
-    organismCounter.textContent = organisms.length;
-    plantCounter.textContent = initialPlants;
-}       
+            const initialPredators = 8;
+            const initialPrey = 28;
+            const initialPlants = 305;
+            
+            for (let i = 0; i < initialPredators; i++) {
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'predator'
+                ));
+            }
+            
+            for (let i = 0; i < initialPrey; i++) {
+                const speciesIndex = i % preySpecies.length;
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'prey',
+                    null,
+                    preySpecies[speciesIndex]
+                ));
+            }
+            
+            for (let i = 0; i < initialPlants; i++) {
+                organisms.push(new Organism(
+                    Math.random() * width,
+                    Math.random() * height,
+                    'plant'
+                ));
+            }
+            
+            organismCounter.textContent = organisms.length;
+            plantCounter.textContent = initialPlants;
+        }       
 
         function addNewOrganism(type) {
             if (type === 'prey') {
